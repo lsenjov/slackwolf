@@ -34,17 +34,12 @@ class Classic implements RoleStrategyInterface
         $num_evil = floor($num_players / 3); // 2
         $num_good = $num_players - $num_evil; // 4
         $num_seer = $optionsManager->getOptionValue(OptionName::role_seer) ? 1 : 0;
-        $num_witch = $optionsManager->getOptionValue(OptionName::role_witch) ? 1 : 0;
+        $num_witch = 0; // Moved witch to optional, didn't want to break stuff
 
         $requiredRoles = [
             Role::SEER => $num_seer,
             Role::WEREWOLF => $num_evil
         ];
-
-        // witch role on
-        if ($optionsManager->getOptionValue(OptionName::role_witch)){
-            $requiredRoles[Role::WITCH] = 1;
-        }
 
         $optionalRoles = [
             Role::VILLAGER => max($num_good - $num_seer + $num_witch, 0)
@@ -77,6 +72,11 @@ class Classic implements RoleStrategyInterface
                 $optionalRoles[Role::BODYGUARD] = 1;
                 $possibleOptionalRoles[] = new Bodyguard();
                 $optionalRoleListMsg .= (strlen($optionalRoleListMsg) > 0 ? ", " : "")."Bodyguard";
+            }
+            if ($optionsManager->getOptionValue(OptionName::role_witch)) {
+                $optionalRoles[Role::WITCH] = 1;
+                $possibleOptionalRoles[] = new Witch();
+                $optionalRoleListMsg .= (strlen($optionalRoleListMsg) > 0 ? ", " : "")."Witch";
             }
         }
 
@@ -113,7 +113,8 @@ class Classic implements RoleStrategyInterface
         //If playing with Wolf Man, swap out a Werewolf for a Wolf Man.
         //Determine if Wolf man should be swapped randomly based off of # of players % 3
         //For now: (0 = 20%, 1 = 40%, 2 = 60%)
-        if($optionsManager->getOptionValue(OptionName::role_wolfman) ? 1 : 0) {
+        if($num_players >= $this->minExtraRolesNumPlayers &&
+                $optionsManager->getOptionValue(OptionName::role_wolfman) ? 1 : 0) {
             $threshold = (.2 + (($num_players % 3) * .2)) * 100;
             $randVal = rand(0, 100);
             if($randVal < $threshold) {
